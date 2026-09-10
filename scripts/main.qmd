@@ -1,0 +1,10 @@
+---
+title: "main"
+format: html
+editor: visual
+---
+
+```{r}
+data = read.csv('../data/financial_news.csv') # Otra vez pandilla, no tocar esta ruta 🤠
+```
+
