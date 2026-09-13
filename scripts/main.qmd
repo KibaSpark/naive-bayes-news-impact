@@ -1,10 +1,107 @@
 ---
 title: "main"
 format: html
-editor: visual
+editor: source
 ---
 
 ```{r}
 data = read.csv('../data/financial_news.csv') # Otra vez pandilla, no tocar esta ruta 🤠
 ```
+
+```{r}
+# no correr si ya están instalados: 
+install.packages("tidytext")
+install.packages("naivebayes")
+install.packages("Matrix")
+install.packages("caret")
+```
+
+```{r}
+library(tidyverse)
+library(tidytext)
+library(naivebayes)
+library(Matrix)
+library(caret)
+```
+
+✏️ Carguen el conjunto de datos en R. Exploren la distribución de la variable objetivo (nivel de impacto). Para facilitar el modelado inicial o evitar desbalances severos, pueden simplificar el problema recodificando la variable a dos categorías (por ejemplo, Impacto Alto vs Impacto Otro/Bajo) con ayuda de la función case_when().
+
+```{r}
+table(data$Impact_Level)
+```
+
+```{r}
+data_clean <- data %>%
+  mutate(
+    doc_id = row_number(),
+    impact_class = factor(case_when(
+      Impact_Level %in% c("High", "Alto") ~ "Alto",
+      TRUE ~ "Otro/Bajo"
+    ), levels = c("Alto", "Otro/Bajo")) 
+  )
+```
+
+```{r}
+table(data_clean$impact_class)
+```
+
+✏️ Utilicen la función unnest_tokens() del paquete tidytext para descomponer los titulares de noticias en palabras individuales. Remuevan las palabras comunes en inglés (stop words) utilizando el dataset integrado stop_words. Construyan la matriz de frecuencia de palabras (sparse matrix) donde cada renglón represente un titular y las columnas correspondan al vocabulario retenido.
+
+```{r}
+data(stop_words)
+
+tokens <- data_clean %>%
+  select(doc_id, Headline, impact_class) %>%
+  unnest_tokens(word, Headline) %>%
+  anti_join(stop_words, by = "word") %>%
+  filter(!str_detect(word, "^[0-9]+$")) 
+```
+
+```{r}
+word_counts <- tokens %>%
+  count(doc_id, word, sort = TRUE)
+```
+
+```{r}
+dtm <- word_counts %>%
+  cast_sparse(row = doc_id, column = word, value = n)
+
+doc_ids_retencion <- as.numeric(rownames(dtm))
+y_vector <- data_clean$impact_class[data_clean$doc_id %in% doc_ids_retencion]
+```
+✏️ Dividan la matriz de datos en training y test set garantizando una separación aleatoria pero reproducible (fijen una semilla con set_seed()).
+
+```{r}
+set.seed(42)
+
+train_indices <- createDataPartition(y_vector, p = 0.7, list = FALSE)
+
+X_train <- dtm[train_indices, ]
+y_train <- y_vector[train_indices]
+
+X_test  <- dtm[-train_indices, ]
+y_test  <- y_vector[-train_indices]
+```
+
+✏️ Utilicen la función naive_bayes() del paquete naivebayes para entrenar el modelo con el training set, prediciendo la categoría de impacto en función de la presencia/frecuencia de las palabras en los titulares y otros factores que consideren importantes.
+
+```{r}
+nb_model <- naive_bayes(
+  x = as.matrix(X_train), 
+  y = y_train, 
+  laplace = 1
+)
+
+y_pred <- predict(nb_model, newdata = as.matrix(X_test))
+
+matriz_eval <- confusionMatrix(data = y_pred, reference = y_test, positive = "Alto")
+print(matriz_eval)
+```
+
+
+
+
+
+
+
 
