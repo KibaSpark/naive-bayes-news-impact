@@ -5,7 +5,7 @@ editor: source
 ---
 
 ```{r}
-data = read.csv('../data/financial_news.csv') # Otra vez pandilla, no tocar esta ruta 🤠
+data = read.csv('../data/financial_news.csv') # Otra vez pandilla, no tocar esta ruta 
 ```
 
 ```{r}
@@ -97,11 +97,29 @@ y_pred <- predict(nb_model, newdata = as.matrix(X_test))
 matriz_eval <- confusionMatrix(data = y_pred, reference = y_test, positive = "Alto")
 print(matriz_eval)
 ```
+```{r}
+
+#prediccion conjunto de prueba
+y_pred <-predict(nb_model, newdata = as.matrix(X_test))
+
+#matriz de confusion 
+matriz_eval <- confusionMatrix(data = y_pred, reference = y_test, positive = "Alto")
+print(matriz_eval)
+
+#extraccion de metricas
+accuracy  <- matriz_eval$overall["Accuracy"]
+precision <- matriz_eval$byClass["Pos Pred Value"] 
+recall    <- matriz_eval$byClass["Sensitivity"]   
+f1_score  <- matriz_eval$byClass["F1"]
 
 
+cat(sprintf("Accuracy:  %.4f\n", accuracy))
+cat(sprintf("Precision: %.4f\n", precision))
+cat(sprintf("Recall:    %.4f\n", recall))
+cat(sprintf("F1-Score:  %.4f\n", f1_score))
+```
+El modelo actual presenta resultados contrastantes, realmente no se puede decir que es un modelo fiable en el mundo financiero ya que comete 300 falsos positvos y 125 falsos negativos. Apenas alcanza 50.7% de exactitud, el porcentjde presición (33.3%) solo sigue confirmando que puede arrojar preocupantes niveles de falsos positivos, auqnue en los niveles de sensibilidad es un poco más fiable a comparación de la presición, realmente tampoco presenta un buen porcentaje (54.5%) lo que también influye en la cantidad de falsos negativos dejando pasar por alto noticias de gran impacto. En recopilación con todo lo anteriormente mencionado el puntaje F1 de 41% solo confirma un balance muy pobre en la capacidad predictiva del modelo.
 
-
-
-
+En el mundo de las inversiones, un falso negativo es significativamente más costoso y peligroso que un falso positivo. Cuando se generra un falso positivo el inversionista genera compras, ventas o rebalanceos en portafolios inncesarios y esto, aunque si conlleva consecuencias en la rentabilidad, la pérdida suele ser pequeña y transitoria. Por otro lado, un falso negativo pasa por alto noticias sumamente importantes, lo que provoca que el inversionista no reaccione a tiempo, omitiendo la activación de órdenes de contención de pérdidas, lo que conduce a la pérdida directa de capital o un costo de oportunidad. 
 
 
